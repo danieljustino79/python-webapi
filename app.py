@@ -1,5 +1,9 @@
+from http import HTTPStatus
+
 from bottle import get, post, request, route, run
-from application.user import User
+
+from application.user_manager import UserManager
+from libs.http_utils import HttpUtils
 
 
 @post('/user')
@@ -8,41 +12,42 @@ def add():
     name = body.get('name')
     email = body.get('email')
 
-    _user = User()
-    _id = _user.add(name, email)
-    if isinstance(_id, int):
-        return str(_id)
+    _id = UserManager.add(name, email)
+    if type(_id) is int:
+        result = {'id': _id}
+        return HttpUtils.response_ok(result)
     else:
-        return 'error'
+        return HttpUtils.response_status(HTTPStatus.BAD_REQUEST)
 
 
-@post('/user/<id_:int>/permission')
-def add_permission(id_):
-    body = request.json
-    permissions = body.get('permissions')
+@post('/user/<_id:int>/permission')
+def add_permission(_id):
+    try:
+        body = request.json
+        permissions = body.get('permissions')
 
-    _user = User()
-    id_validate = _user.add_permission(id_, permissions)
-    if isinstance(id_validate, int):
-        return str(id_validate)
-    else:
-        return 'error'
+        successfully = UserManager.add_permission(_id, permissions)
+        if successfully is True:
+            return HttpUtils.response_status(HTTPStatus.OK)
+        else:
+            return HttpUtils.response_status(HTTPStatus.BAD_REQUEST)
+    except AttributeError:
+        return HttpUtils.response_status(HTTPStatus.BAD_REQUEST)
 
 
 @get('/user')
 def get():
-    _user = User()
-    return _user.get_users()
+    users = UserManager.get_users()
+    return HttpUtils.response_ok(users)
 
 
 @route('/user/<id_:int>')
-def get_by_id(id_):
-    _user = User()
-    _obj = _user.get_by_id(id_)
-    if isinstance(_obj, object):
-        return _obj
+def get_by_id(_id):
+    user = UserManager.get_by_id(_id)
+    if user is not None:
+        return HttpUtils.response_ok(user)
     else:
-        return 'error'
+        return HttpUtils.response_status(HTTPStatus.NOT_FOUND)
 
 
-run(host='localhost', port=8081, debug=True)
+run(host='localhost', port=8082, debug=True)
